@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { InputForm } from './components/InputForm';
@@ -48,7 +47,6 @@ const HistoryPanel: React.FC<{ isOpen: boolean; onClose: () => void; history: Hi
 };
 
 export default function App() {
-  // Fix: Explicitly type the theme state to prevent type inference issues where it's inferred as `string` instead of `'light' | 'dark'`.
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -72,11 +70,13 @@ export default function App() {
   
   const [isCaptionLoading, setIsCaptionLoading] = useState(false);
   const [isSeoLoading, setIsSeoLoading] = useState(false);
+  const [isFixingSeo, setIsFixingSeo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'content' | 'seo'>('content');
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [originalPostIdeaForGeneration, setOriginalPostIdeaForGeneration] = useState<string | null>(null);
   
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
@@ -114,6 +114,7 @@ export default function App() {
     setError(null);
     setGeneratedContent(null);
     setInputSeoAnalysis(null);
+    setOriginalPostIdeaForGeneration(postIdea); // Store the original idea for potential fixing later
 
     try {
       const captionPromise = generateCaption({ postIdea, tone, platform, includeTitle, hashtagCount, enhanceStyle, image: image ? { mimeType: image.mimeType, data: image.data } : undefined, });
@@ -170,6 +171,40 @@ export default function App() {
     }
   }, [postIdea]);
 
+  const handleFixGeneratedSeo = useCallback(async () => {
+    if (!originalPostIdeaForGeneration) {
+        setError('Original post idea not found to fix SEO.');
+        return;
+    }
+    setIsFixingSeo(true);
+    setError(null);
+    try {
+        const { rewrittenText } = await rewriteTextForSeo(originalPostIdeaForGeneration);
+        setPostIdea(rewrittenText); // Update the input form for the user
+
+        const newCaptionResult = await generateCaption({
+            postIdea: rewrittenText,
+            tone,
+            platform,
+            includeTitle,
+            hashtagCount,
+            enhanceStyle,
+            image: image ? { mimeType: image.mimeType, data: image.data } : undefined,
+        });
+
+        setGeneratedContent(newCaptionResult);
+        addToHistory(newCaptionResult, rewrittenText, image?.preview);
+        setOriginalPostIdeaForGeneration(rewrittenText); // Update the original idea as well
+        setActiveTab('content');
+
+    } catch (err) {
+        console.error(err);
+        setError(`Failed to fix SEO. ${err instanceof Error ? err.message : 'An unknown error occurred.'}`);
+    } finally {
+        setIsFixingSeo(false);
+    }
+  }, [originalPostIdeaForGeneration, tone, platform, includeTitle, hashtagCount, enhanceStyle, image, addToHistory]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:via-gray-900 dark:to-slate-800 text-gray-800 dark:text-gray-200">
        <HistoryPanel isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} history={history} />
@@ -192,7 +227,8 @@ export default function App() {
               hashtagCount={hashtagCount} setHashtagCount={setHashtagCount}
               enhanceStyle={enhanceStyle} setEnhanceStyle={setEnhanceStyle}
               image={image} setImage={setImage}
-              isCaptionLoading={isCaptionLoading} isSeoLoading={isSeoLoading}
+              isCaptionLoading={isCaptionLoading || isFixingSeo} 
+              isSeoLoading={isSeoLoading}
               onGenerateCaption={handleGenerateCaption} onGenerateSeo={handleGenerateSeo}
               autoOptimizeSeo={autoOptimizeSeo} setAutoOptimizeSeo={setAutoOptimizeSeo}
             />
@@ -203,10 +239,12 @@ export default function App() {
               inputSeoAnalysis={inputSeoAnalysis}
               isCaptionLoading={isCaptionLoading}
               isSeoLoading={isSeoLoading}
+              isFixingSeo={isFixingSeo}
               error={error}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               onFixSeo={handleFixSeo}
+              onFixGeneratedSeo={handleFixGeneratedSeo}
             />
           </div>
         </main>

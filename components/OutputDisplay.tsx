@@ -11,10 +11,12 @@ interface OutputDisplayProps {
   inputSeoAnalysis: InputSeoAnalysis | null;
   isCaptionLoading: boolean;
   isSeoLoading: boolean;
+  isFixingSeo: boolean;
   error: string | null;
   activeTab: 'content' | 'seo';
   setActiveTab: (tab: 'content' | 'seo') => void;
   onFixSeo: () => void;
+  onFixGeneratedSeo: () => void;
 }
 
 const CopyButton: React.FC<{ textToCopy: string }> = ({ textToCopy }) => {
@@ -61,7 +63,7 @@ const TabButton: React.FC<{ isActive: boolean; onClick: () => void; children: Re
   );
 }
 
-export const OutputDisplay: React.FC<OutputDisplayProps> = ({ content, inputSeoAnalysis, isCaptionLoading, isSeoLoading, error, activeTab, setActiveTab, onFixSeo }) => {
+export const OutputDisplay: React.FC<OutputDisplayProps> = ({ content, inputSeoAnalysis, isCaptionLoading, isSeoLoading, isFixingSeo, error, activeTab, setActiveTab, onFixSeo, onFixGeneratedSeo }) => {
   const [copyAll, setCopyAll] = useState(false);
 
   const handleCopyAll = () => {
@@ -87,7 +89,7 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ content, inputSeoA
         {allHashtags.length > 0 && (<div><h3 className="font-bold text-lg mb-2 text-cyan-500 dark:text-cyan-400">Hashtags</h3><div className="relative p-4 bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-slate-700 rounded-lg space-y-3"><CopyButton textToCopy={allHashtags.map(tag => `#${tag}`).join(' ')} /><div className="pr-8"><HashtagGroup title="Broad" tags={content.hashtags.broad} className="text-cyan-600 dark:text-cyan-300" /><HashtagGroup title="Niche" tags={content.hashtags.niche} className="text-teal-600 dark:text-teal-300" /><HashtagGroup title="Trending" tags={content.hashtags.trending} className="text-sky-600 dark:text-sky-300" /></div></div></div>)}
         {content.postingTimes && content.postingTimes.length > 0 && (<div><h3 className="font-bold text-lg mb-2 text-amber-500 dark:text-amber-400">Suggested Post Times</h3><div className="relative p-4 bg-gray-100 dark:bg-gray-900/50 border border-gray-200 dark:border-slate-700 rounded-lg"><CopyButton textToCopy={content.postingTimes.join(', ')} /><ul className="list-disc list-inside text-gray-700 dark:text-gray-300 pr-8">{content.postingTimes.map((time, i) => <li key={i}>{time}</li>)}</ul></div></div>)}
         <button onClick={handleCopyAll} className="w-full flex items-center justify-center bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors">{copyAll ? <><CheckIcon className="w-5 h-5 mr-2 text-green-500"/> Copied!</> : 'Copy Everything ✨'}</button>
-        {content.seoInsights && <SeoInsightsDisplay insights={content.seoInsights} />}
+        {content.seoInsights && <SeoInsightsDisplay insights={content.seoInsights} onFixSeo={onFixGeneratedSeo} isLoading={isFixingSeo} />}
       </div>
     );
   };

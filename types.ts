@@ -30,6 +30,7 @@ export interface InputSeoAnalysis {
   score: number;
   keywords: string[];
   suggestions: string[];
+  emotionalPower?: 'Low' | 'Medium' | 'High';
 }
 
 export interface GeneratedContent {

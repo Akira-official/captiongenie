@@ -89,14 +89,15 @@ const inputSeoAnalysisSchema = {
   properties: {
     score: { type: Type.INTEGER, description: "An SEO score from 0 to 100 for the user's input text, based on keyword richness, clarity, and engagement potential." },
     keywords: { type: Type.ARRAY, items: { type: Type.STRING }, description: "A list of the most relevant keywords found in the text." },
-    suggestions: { type: Type.ARRAY, items: { type: Type.STRING }, description: "A list of actionable suggestions to improve the text's SEO." }
+    suggestions: { type: Type.ARRAY, items: { type: Type.STRING }, description: "A list of actionable suggestions to improve the text's SEO." },
+    emotionalPower: { type: Type.STRING, description: "An assessment of the text's emotional impact, rated as 'Low', 'Medium', or 'High'." }
   },
-  required: ['score', 'keywords', 'suggestions']
+  required: ['score', 'keywords', 'suggestions', 'emotionalPower']
 };
 
 export const analyzeInputForSeo = async (text: string): Promise<InputSeoAnalysis> => {
   const model = 'gemini-2.5-flash';
-  const systemInstruction = `You are an SEO expert. Analyze the provided text for its SEO performance. Your analysis should focus on keyword richness, readability, tone, and engagement potential. Provide a score, list the primary keywords you found, and give actionable suggestions for improvement. Your response must be a single, valid JSON object that strictly adheres to the provided schema.`;
+  const systemInstruction = `You are an SEO expert. Analyze the provided text for its SEO performance. Your analysis should focus on keyword richness, readability, tone, and engagement potential. For the 'emotionalPower' rating, perform a nuanced analysis: consider the overall sentiment (positive, negative, neutral), the intensity of the language used (e.g., 'good' vs. 'revolutionary'), and the presence of emotional triggers or power words. Based on this sophisticated analysis, provide a rating of 'Low', 'Medium', or 'High'. Provide a score, list the primary keywords you found, give actionable suggestions for improvement, and include the emotional power rating. Your response must be a single, valid JSON object that strictly adheres to the provided schema.`;
 
   try {
     const response = await ai.models.generateContent({
